@@ -1,15 +1,55 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
-import "../src/HeritageChain.sol";
-import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
-import "@openzeppelin/contracts/token/ERC721/presets/ERC721PresetMinterPauserAutoId.sol";
+import { HeritageChain } from "../src/HeritageChain.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+
+
+contract MockERC20 is ERC20, AccessControl {
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+
+    constructor() ERC20("Mock Token", "MTK") {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(MINTER_ROLE, msg.sender);
+        _grantRole(PAUSER_ROLE, msg.sender);
+    }
+
+    function mint(address to, uint256 amount) public onlyRole(MINTER_ROLE) {
+        _mint(to, amount);
+    }
+}
+
+contract MockERC721 is ERC721, AccessControl {
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    
+    uint256 private _tokenIdCounter;
+
+    constructor() ERC721("Mock NFT", "MNFT") {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(MINTER_ROLE, msg.sender);
+        _grantRole(PAUSER_ROLE, msg.sender);
+    }
+
+    function mint(address to) public onlyRole(MINTER_ROLE) {
+        _mint(to, _tokenIdCounter);
+        _tokenIdCounter++;
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721, AccessControl) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
+}
+
 
 contract HeritageChainTest is Test {
     HeritageChain public heritageChain;
-    ERC20PresetMinterPauser public mockERC20;
-    ERC721PresetMinterPauserAutoId public mockERC721;
+    MockERC20 public mockERC20;
+    MockERC721 public mockERC721;
     
     address public originator;
     address public beneficiary1;
@@ -26,14 +66,18 @@ contract HeritageChainTest is Test {
         beneficiary3 = address(4);
         
         // Deploy mock tokens
-        mockERC20 = new ERC20PresetMinterPauser("Mock Token", "MTK");
-        mockERC721 = new ERC721PresetMinterPauserAutoId("Mock NFT", "MNFT", "");
+        mockERC20 = new MockERC20();
+        mockERC721 = new MockERC721();
+
+        // Grant MINTER_ROLE to originator
+        mockERC20.grantRole(mockERC20.MINTER_ROLE(), originator);
+        mockERC721.grantRole(mockERC721.MINTER_ROLE(), originator);
         
         // Set up originator with tokens
         vm.startPrank(originator);
         
         // Deploy HeritageChain contract
-        heritageChain = new HeritageChain();
+        heritageChain = new HeritageChain(originator);
         
         // Mint test tokens to originator
         mockERC20.mint(originator, 1000 ether);
@@ -51,6 +95,9 @@ contract HeritageChainTest is Test {
     
     function _setupBasicLegacyPlan() internal {
         vm.startPrank(originator);
+
+        // Deal ETH to originator first
+        vm.deal(originator, 100 ether);
         
         // Deposit ETH
         heritageChain.depositETH{value: 10 ether}();

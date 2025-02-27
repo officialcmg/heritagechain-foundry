@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -68,7 +68,7 @@ contract HeritageChain is Ownable, ReentrancyGuard {
     /**
      * @dev Constructor that sets the originator as the owner
      */
-    constructor() Ownable(msg.sender) {
+    constructor(address _owner) Ownable(_owner) {
         // Initialize with no trigger
         trigger = Trigger({
             triggerType: TriggerType.NONE,
