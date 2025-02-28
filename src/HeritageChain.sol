@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title HeritageChain
- * @author Developed based on the SRS
+ * @author officialcmg
  * @notice A Digital Legacy Manager smart contract that automates the distribution of digital assets
  * based on time-based triggers or voluntary activation by the originator
  */
@@ -291,6 +291,14 @@ contract HeritageChain is Ownable, ReentrancyGuard {
         });
         
         emit LegacyPlanCancelled(block.timestamp);
+    }
+
+    /**
+     * @notice Returns true if funds have been distributed and false otherwise
+     * @return Boolean for the state of ditribution 
+     */
+    function getIsDistributed() external view returns (bool) {
+        return isDistributed;
     }
 
     /**
