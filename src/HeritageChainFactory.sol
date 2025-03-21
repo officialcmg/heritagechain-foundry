@@ -6,7 +6,7 @@ contract HeritageChainFactory {
     // Mapping to store one contract address per user
     mapping(address => address) public userContracts;
 
-    event HeritageChainCreated(address indexed creator);
+    event HeritageChainCreated(address indexed creator, address contractAddress, uint256 timestamp);
 
     /**
      * @notice Deploys a new HeritageChain contract for the sender.
@@ -26,7 +26,7 @@ contract HeritageChainFactory {
         HeritageChain newHeritageChain = new HeritageChain(msg.sender);
         userContracts[msg.sender] = address(newHeritageChain);
 
-        emit HeritageChainCreated(msg.sender);
+        emit HeritageChainCreated(msg.sender, address(newHeritageChain), block.timestamp);
 
         return address(newHeritageChain);
     }
